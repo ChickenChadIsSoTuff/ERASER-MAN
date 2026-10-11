@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <title>Eraser Man</title>
+
+ <style>
+   body{
+     margin:0;
+     background:#111;
+     color:white;
+     font-family:Arial;
+     text-align:center;
+     overflow:hidden;
+   }
+
+   canvas{
+     display:block;
+     margin:auto;
+     background:#222;
+     border:3px solid white;
+   }
+
+   #cutscene{
+     position:absolute;
+     top:0;
+     left:0;
+     width:100%;
+     height:100%;
+     display:none;
+     background:rgba(0,0,0,0.85);
+     color:white;
+     font-size:22px;
+     padding-top:180px;
+     z-index:10;
+   }
+ </style>
+</head>
+
+<body>
+
+<h1>Eraser Man</h1>
+
+<canvas id="game" width="800" height="400"></canvas>
+
+<audio id="jazzMusic" loop>
+ <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=smooth-jazz-10954.mp3" type="audio/mpeg">
+</audio>
+
+<div id="cutscene"></div>
+
+<script>
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const cutscene = document.getElementById("cutscene");
+const jazzMusic = document.getElementById("jazzMusic");
+
+document.addEventListener("keydown", ()=>{
+ if(jazzMusic.paused){
+   jazzMusic.volume = 0.4;
+   jazzMusic.play();
+ }
+},{ once:true });
+
+/* ---------------- PLAYER ---------------- */
+
+let player = {
+ x:50,
+ y:200,
+ hp:200,   // ✅ ONLY CHANGE (was 100)
+ state:"Eraser Man",
+ power:0
+};
+
+/* ---------------- GAME STATE ---------------- */
+
+let keys = {};
+let stage = -1;
+let enemies = [];
+
+let boss = {
+ x:650,
+ y:170,
+ hp:600,
+ active:false,
+ attackTimer:0
+};
+
+let attackCooldown = 0;
+let attackPressed = false;
+
+let slashes = [];
+let attackRangeEffect = null;
+
+/* ---------------- INPUT ---------------- */
+
+document.addEventListener("keydown",e=>{
+ keys[e.key] = true;
+});
+
+document.addEventListener("keyup",e=>{
+ keys[e.key] = false;
+});
+
+/* ---------------- CUTSCENES ---------------- */
+
+function showCutscene(lines,nextCallback){
+ cutscene.style.display = "block";
+
+ let i = 0;
+
+ function nextLine(){
+   if(i < lines.length){
+     cutscene.innerHTML =
+     lines[i] +
+     "<br><br><i>(press any key)</i>";
+   }else{
+     cutscene.style.display = "none";
+     document.removeEventListener("keydown",handler);
+     nextCallback();
+     return;
+   }
+ }
+
+ function handler(e){
+   i++;
+   nextLine();
+ }
+
+ document.addEventListener("keydown",handler);
+ nextLine();
+}
+
+/* ---------------- ENEMY SPAWN ---------------- */
+
+function spawnEnemies(){
+
+ enemies = [];
+
+ for(let i=0;i<6+stage*3;i++){
+   enemies.push({
+     x:200 + Math.random()*500,
+     y:Math.random()*350,
+     hp:60 + stage*40,
+     speed:0.4 + stage*0.15,
+     damage:5 + stage*2,
+     wobble:Math.random()*10
+   });
+ }
+}
+
+/* ---------------- GAME LOOP ---------------- */
+
+function update(){
+
+ if(stage < 0) return;
+
+ if(keys["ArrowUp"]) player.y -= 3;
+ if(keys["ArrowDown"]) player.y += 3;
+ if(keys["ArrowLeft"]) player.x -= 3;
+ if(keys["ArrowRight"]) player.x += 3;
+
+ if(player.x < 0) player.x = 0;
+ if(player.y < 0) player.y = 0;
+ if(player.x > 770) player.x = 770;
+ if(player.y > 370) player.y = 370;
+}
+
+function draw(){
+
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+
+ ctx.fillStyle="#222";
+ ctx.fillRect(0,0,canvas.width,canvas.height);
+
+ /* PLAYER */
+ ctx.fillStyle="white";
+ ctx.fillRect(player.x,player.y,22,28);
+
+ ctx.fillStyle="black";
+ ctx.fillRect(player.x+5,player.y+8,3,3);
+ ctx.fillRect(player.x+14,player.y+8,3,3);
+ ctx.fillRect(player.x+6,player.y+18,10,2);
+
+ /* UI */
+ ctx.fillStyle="white";
+ ctx.fillText("HP: " + Math.floor(player.hp),10,20);
+ ctx.fillText("Power: " + player.power,10,40);
+ ctx.fillText("Stage: " + stage,10,60);
+ ctx.fillText(player.state,10,80);
+}
+
+function loop(){
+ update();
+ draw();
+ requestAnimationFrame(loop);
+}
+
+loop();
+
+</script>
+
+</body>
+</html>
